@@ -178,44 +178,6 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
 
         public IModelMetadataProvider CreateModelMetadataProvider()
         {
-#if NETCOREAPP3_0
-#if EMPTY
-            return new EmptyModelMetadataProvider();
-#elif FORK_V2
-            var detailsProviders = new IMetadataDetailsProvider[]
-            {
-                new FORK_V2_DefaultBindingMetadataProvider(),
-                new FORK_V2_DefaultValidationMetadataProvider(),
-                new FORK_V2_DataAnnotationsMetadataProvider(
-                    Options.Create(new MvcDataAnnotationsLocalizationOptions()),
-                    null),
-                new BindingSourceMetadataProvider(typeof(CancellationToken), BindingSource.Special),
-                new BindingSourceMetadataProvider(typeof(IFormFile), BindingSource.FormFile),
-                new BindingSourceMetadataProvider(typeof(IFormFileCollection), BindingSource.FormFile),
-                new BindingSourceMetadataProvider(typeof(IEnumerable<IFormFile>), BindingSource.FormFile)
-            };
-
-            var compositeDetailsProvider = new FORK_V2_DefaultCompositeMetadataDetailsProvider(detailsProviders);
-            return new DefaultModelMetadataProvider(compositeDetailsProvider, Options.Create(new MvcOptions()));
-#elif FORK_V3
-            var detailsProviders = new IMetadataDetailsProvider[]
-            {
-                new FORK_V3_DefaultBindingMetadataProvider(),
-                new FORK_V3_DefaultValidationMetadataProvider(),
-                new FORK_V3_DataAnnotationsMetadataProvider(
-                    new MvcOptions(),
-                    Options.Create(new MvcDataAnnotationsLocalizationOptions()),
-                    null),
-                new BindingSourceMetadataProvider(typeof(CancellationToken), BindingSource.Special),
-                new BindingSourceMetadataProvider(typeof(IFormFile), BindingSource.FormFile),
-                new BindingSourceMetadataProvider(typeof(IFormFileCollection), BindingSource.FormFile),
-                new BindingSourceMetadataProvider(typeof(IEnumerable<IFormFile>), BindingSource.FormFile)
-            };
-
-            var compositeDetailsProvider = new FORK_V3_DefaultCompositeMetadataDetailsProvider(detailsProviders);
-            return new DefaultModelMetadataProvider(compositeDetailsProvider, Options.Create(new MvcOptions()));
-#endif
-#else
             var detailsProviders = new IMetadataDetailsProvider[]
             {
                 new DefaultBindingMetadataProvider(),
@@ -231,7 +193,6 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
 
             var compositeDetailsProvider = new DefaultCompositeMetadataDetailsProvider(detailsProviders);
             return new DefaultModelMetadataProvider(compositeDetailsProvider, Options.Create(new MvcOptions()));
-#endif
         }
     }
 }
