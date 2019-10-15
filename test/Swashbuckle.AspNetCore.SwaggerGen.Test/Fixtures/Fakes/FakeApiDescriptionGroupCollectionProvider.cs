@@ -1,11 +1,16 @@
-﻿using System;
+﻿#define FORK_V2
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Buffers;
-using Microsoft.Extensions.Options;
+using System.Threading;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ObjectPool;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Constraints;
 using Microsoft.AspNetCore.Mvc;
@@ -13,21 +18,22 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.Mvc.Formatters;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.ObjectPool;
+using Microsoft.AspNetCore.Mvc.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Moq;
 using Newtonsoft.Json;
 
 #if NETCOREAPP3_0
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+#if FORK_V2
+using Microsoft.AspNetCore.Mvc.Internal;
+using Microsoft.AspNetCore.Mvc.DataAnnotations.Internal;
+#endif
 #else
-using System.Threading;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
-using Microsoft.AspNetCore.Mvc.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.DataAnnotations.Internal;
 using Microsoft.AspNetCore.Mvc.Internal;
 #endif
@@ -173,7 +179,42 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
         public IModelMetadataProvider CreateModelMetadataProvider()
         {
 #if NETCOREAPP3_0
+#if EMPTY
             return new EmptyModelMetadataProvider();
+#elif FORK_V2
+            var detailsProviders = new IMetadataDetailsProvider[]
+            {
+                new FORK_V2_DefaultBindingMetadataProvider(),
+                new FORK_V2_DefaultValidationMetadataProvider(),
+                new FORK_V2_DataAnnotationsMetadataProvider(
+                    Options.Create(new MvcDataAnnotationsLocalizationOptions()),
+                    null),
+                new BindingSourceMetadataProvider(typeof(CancellationToken), BindingSource.Special),
+                new BindingSourceMetadataProvider(typeof(IFormFile), BindingSource.FormFile),
+                new BindingSourceMetadataProvider(typeof(IFormFileCollection), BindingSource.FormFile),
+                new BindingSourceMetadataProvider(typeof(IEnumerable<IFormFile>), BindingSource.FormFile)
+            };
+
+            var compositeDetailsProvider = new FORK_V2_DefaultCompositeMetadataDetailsProvider(detailsProviders);
+            return new DefaultModelMetadataProvider(compositeDetailsProvider, Options.Create(new MvcOptions()));
+#elif FORK_V3
+            var detailsProviders = new IMetadataDetailsProvider[]
+            {
+                new FORK_V3_DefaultBindingMetadataProvider(),
+                new FORK_V3_DefaultValidationMetadataProvider(),
+                new FORK_V3_DataAnnotationsMetadataProvider(
+                    new MvcOptions(),
+                    Options.Create(new MvcDataAnnotationsLocalizationOptions()),
+                    null),
+                new BindingSourceMetadataProvider(typeof(CancellationToken), BindingSource.Special),
+                new BindingSourceMetadataProvider(typeof(IFormFile), BindingSource.FormFile),
+                new BindingSourceMetadataProvider(typeof(IFormFileCollection), BindingSource.FormFile),
+                new BindingSourceMetadataProvider(typeof(IEnumerable<IFormFile>), BindingSource.FormFile)
+            };
+
+            var compositeDetailsProvider = new FORK_V3_DefaultCompositeMetadataDetailsProvider(detailsProviders);
+            return new DefaultModelMetadataProvider(compositeDetailsProvider, Options.Create(new MvcOptions()));
+#endif
 #else
             var detailsProviders = new IMetadataDetailsProvider[]
             {
